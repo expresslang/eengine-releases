@@ -1,4 +1,4 @@
-name: Build and Release
+name: build-release
 
 on:
   workflow_dispatch:
@@ -153,7 +153,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag_name }}
-          name: eengine ${{ steps.prepare.outputs.version }}
+          name: ${{ steps.prepare.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true
