@@ -1,11 +1,11 @@
 name: Check for New Tags
 
 on:
-  schedule:
-    # Run daily at midnight UTC
-    - cron: '0 0 * * *'
+  # schedule:
+  #   # Run daily at midnight UTC (DISABLED - use manual trigger only)
+  #   - cron: '0 0 * * *'
   workflow_dispatch:
-    # Allow manual triggering for testing
+    # Manual triggering only - test with 5.0.0 first before enabling cron
 
 jobs:
   check-tags:

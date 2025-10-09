@@ -119,9 +119,13 @@ https://github.com/expresslang/eengine-releases/releases[Releases page].
 
 === General
 
-The `check-tags.yml` workflow runs daily at midnight UTC via a cron schedule.
-It automatically detects new eengine tags from the SourceForge repository and
-triggers builds for any tags that don't yet have corresponding GitHub releases.
+The `check-tags.yml` workflow can be run manually to detect new eengine tags
+from the SourceForge repository and trigger builds for any tags that don't yet
+have corresponding GitHub releases.
+
+NOTE: The daily cron schedule is currently disabled. Manual triggering is
+required to ensure each release builds successfully before processing
+additional tags.
 
 This workflow implements the following logic:
 

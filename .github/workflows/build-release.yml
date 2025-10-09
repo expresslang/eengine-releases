@@ -70,33 +70,45 @@ jobs:
           sbcl --load sbcl/compile.lisp
           sbcl --load sbcl/deliver.lisp
 
-      - name: Find and verify binary
+      - name: Find and list all generated files
         id: find-binary
         working-directory: eengine
         shell: bash
         run: |
-          echo "Looking for binary matching pattern: ${{ matrix.artifact_pattern }}"
+          echo "=== Listing all files in eengine directory ==="
+          ls -la
 
-          # Find the built binary
-          BINARY=$(find . -maxdepth 1 -name "${{ matrix.artifact_pattern }}" -type f | head -1)
+          echo ""
+          echo "=== Looking for eengine binaries ==="
+          # Look for any file starting with eengine
+          BINARIES=$(find . -maxdepth 1 -name "eengine*" -type f)
 
-          if [ -z "$BINARY" ]; then
-            echo "ERROR: No binary found matching pattern ${{ matrix.artifact_pattern }}"
-            ls -la
+          if [ -z "$BINARIES" ]; then
+            echo "ERROR: No eengine binaries found"
+            echo "Full directory listing:"
+            ls -laR
             exit 1
           fi
+
+          echo "Found binaries:"
+          echo "$BINARIES"
+
+          # Get the first binary (should only be one)
+          BINARY=$(echo "$BINARIES" | head -1)
 
           # Remove ./ prefix if present
           BINARY=${BINARY#./}
 
-          echo "Found binary: $BINARY"
+          echo ""
+          echo "Using binary: $BINARY"
           echo "binary_name=$BINARY" >> $GITHUB_OUTPUT
 
-          # Verify it exists and is executable (except on Windows)
+          # Make executable on Unix platforms
           if [ "${{ matrix.platform }}" != "windows" ]; then
             chmod +x "$BINARY"
           fi
 
+          # Show file details
           ls -lh "$BINARY"
 
       - name: Upload artifact
