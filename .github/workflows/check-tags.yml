@@ -1,0 +1,110 @@
+name: Check for New Tags
+
+on:
+  schedule:
+    # Run daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual triggering for testing
+
+jobs:
+  check-tags:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Clone eengine repository
+        run: |
+          git clone git://git.code.sf.net/p/exp-engine/engine eengine-repo
+
+      - name: Get all eengine tags
+        id: get-tags
+        run: |
+          cd eengine-repo
+
+          # Get all tags matching eeng-* pattern
+          ALL_TAGS=$(git tag -l 'eeng-*' | sort -V)
+
+          # Filter for versions >= 5.0.0 (exclude 3.x and 4.x)
+          FILTERED_TAGS=$(echo "$ALL_TAGS" | awk -F'-' '{
+            split($2, ver, ".");
+            major = ver[1];
+            if (major >= 5) print $0;
+          }')
+
+          echo "Filtered tags (5.x and above):"
+          echo "$FILTERED_TAGS"
+
+          # Save to file for next step
+          echo "$FILTERED_TAGS" > ../filtered-tags.txt
+
+      - name: Get existing GitHub releases
+        id: existing-releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get list of existing release tags
+          gh release list --repo ${{ github.repository }} --limit 1000 | \
+            awk '{print $3}' > existing-releases.txt
+
+          echo "Existing releases:"
+          cat existing-releases.txt
+
+      - name: Find new tags
+        id: new-tags
+        run: |
+          # Compare filtered tags with existing releases to find new ones
+          NEW_TAGS=$(comm -23 \
+            <(sort filtered-tags.txt) \
+            <(sort existing-releases.txt))
+
+          echo "New tags to build:"
+          echo "$NEW_TAGS"
+
+          # Save as JSON array for matrix
+          if [ -n "$NEW_TAGS" ]; then
+            echo "has_new_tags=true" >> $GITHUB_OUTPUT
+            # Convert to JSON array
+            TAGS_JSON=$(echo "$NEW_TAGS" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "tags=$TAGS_JSON" >> $GITHUB_OUTPUT
+          else
+            echo "has_new_tags=false" >> $GITHUB_OUTPUT
+            echo "tags=[]" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger build workflow for new tags
+        if: steps.new-tags.outputs.has_new_tags == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAGS='${{ steps.new-tags.outputs.tags }}'
+
+          echo "$TAGS" | jq -r '.[]' | while read -r tag; do
+            echo "Triggering build for tag: $tag"
+            gh workflow run build-release.yml \
+              --repo ${{ github.repository }} \
+              --ref ${{ github.ref }} \
+              -f tag_name="$tag"
+
+            # Add a small delay between triggers to avoid rate limiting
+            sleep 2
+          done
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.new-tags.outputs.has_new_tags }}" == "true" ]; then
+            echo "### ✅ New tags found and build triggered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Tags:" >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.new-tags.outputs.tags }}' | jq -r '.[]' | while read -r tag; do
+              echo "- \`$tag\`" >> $GITHUB_STEP_SUMMARY
+            done
+          else
+            echo "### ℹ️ No new tags found" >> $GITHUB_STEP_SUMMARY
+            echo "All existing tags already have releases." >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,408 @@
+= eengine Release Automation
+:toc:
+:toclevels: 3
+
+image:https://github.com/expresslang/eengine-releases/actions/workflows/check-tags.yml/badge.svg[Check Tags,link=https://github.com/expresslang/eengine-releases/actions/workflows/check-tags.yml]
+image:https://github.com/expresslang/eengine-releases/actions/workflows/build-release.yml/badge.svg[Build and Release,link=https://github.com/expresslang/eengine-releases/actions/workflows/build-release.yml]
+
+== Purpose
+
+This repository provides automated build and release workflows for the
+https://sourceforge.net/projects/exp-engine/[Express Engine (eengine)]
+project.
+
+Express Engine is an open-source EXPRESS language parser and interpreter
+implemented in Steel Bank Common Lisp (SBCL). It is used for parsing,
+interpreting, and validating EXPRESS schemas and data files.
+
+The eengine source code is hosted at SourceForge. This repository does not
+contain the eengine source code, but only the GitHub Actions workflows and
+documentation for building and releasing eengine binaries across multiple
+platforms.
+
+This work supports the ELF project and the EXPRESS language community by
+providing easy access to pre-built cross-platform eengine binaries.
+
+== Features
+
+* <<daily-tag-checking,Daily tag checking>> to detect new eengine releases
+* <<multi-platform-builds,Multi-platform builds>> for Linux, Windows, and macOS
+* <<automated-github-releases,Automated GitHub releases>> with pre-built binaries
+* <<version-filtering,Version filtering>> to process only relevant releases
+
+== Architecture
+
+.Release automation workflow
+[source]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                    SourceForge Repository                       │
+│              git://git.code.sf.net/p/exp-engine/engine          │
+│                                                                 │
+│  Contains: eengine source code with tags (eeng-x.y.z)           │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         │ Daily check (cron)
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│           GitHub Actions Workflow: check-tags.yml               │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Checkout eengine repository                                 │
+│  2. List all tags matching eeng-*                               │
+│  3. Filter for versions ≥ 5.0.0                                 │
+│  4. Compare with existing GitHub releases                       │
+│  5. Identify new tags without releases                          │
+│  6. Trigger build-release.yml for each new tag                  │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         │ Workflow dispatch
+                         ▼
+┌────────────────────────────────────────────────────────────────┐
+│        GitHub Actions Workflow: build-release.yml              │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ Linux Build  │  │Windows Build │  │ macOS Build  │          │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
+│  │ ubuntu-latest│  │windows-latest│  │  macos-14    │          │
+│  │              │  │              │  │              │          │
+│  │ 1. Install   │  │ 1. Install   │  │ 1. Install   │          │
+│  │    SBCL      │  │    SBCL      │  │    SBCL      │          │
+│  │ 2. Checkout  │  │ 2. Checkout  │  │ 2. Checkout  │          │
+│  │    source    │  │    source    │  │    source    │          │
+│  │ 3. Compile   │  │ 3. Compile   │  │ 3. Compile   │          │
+│  │ 4. Deliver   │  │ 4. Deliver   │  │ 4. Deliver   │          │
+│  │ 5. Upload    │  │ 5. Upload    │  │ 5. Upload    │          │
+│  │    artifact  │  │    artifact  │  │    artifact  │          │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
+│         │                 │                 │                  │
+│         └─────────────────┴─────────────────┘                  │
+│                           │                                    │
+│                           ▼                                    │
+│                  ┌────────────────┐                            │
+│                  │ Release Job    │                            │
+│                  ├────────────────┤                            │
+│                  │ 1. Download    │                            │
+│                  │    all         │                            │
+│                  │    artifacts   │                            │
+│                  │ 2. Create      │                            │
+│                  │    GitHub      │                            │
+│                  │    Release     │                            │
+│                  │ 3. Upload      │                            │
+│                  │    binaries    │                            │
+│                  └────────────────┘                            │
+│                                                                │
+└────────────────────────┬───────────────────────────────────────┘
+                         │
+                         ▼
+┌────────────────────────────────────────────────────────────────┐
+│                     GitHub Release                             │
+│                                                                │
+│  Tag: eeng-5.2.7                                               │
+│  Artifacts:                                                    │
+│    - eengine-5.2.7-lnx-x86-64-sbcl                             │
+│    - eengine-5.2.7-win-x86-64-sbcl.exe                         │
+│    - eengine-5.2.7-mac-arm64-sbcl                              │
+└────────────────────────────────────────────────────────────────┘
+----
+
+== Installation
+
+No installation is required for this repository. The workflows run
+automatically on GitHub Actions.
+
+To use the pre-built binaries, download them from the
+https://github.com/expresslang/eengine-releases/releases[Releases page].
+
+[[daily-tag-checking]]
+== Daily tag checking
+
+=== General
+
+The `check-tags.yml` workflow runs daily at midnight UTC via a cron schedule.
+It automatically detects new eengine tags from the SourceForge repository and
+triggers builds for any tags that don't yet have corresponding GitHub releases.
+
+This workflow implements the following logic:
+
+. Clone the eengine repository from SourceForge using `git clone`
+. List all tags matching the pattern `eeng-*`
+. Filter tags to include only versions 5.0.0 and above
+. Query existing GitHub releases in this repository
+. Identify new tags without releases
+. Trigger the build-release workflow for each new tag
+
+NOTE: We use `git clone` directly instead of `actions/checkout` due to
+https://github.com/actions/checkout/issues/447[limitations with non-GitHub repositories].
+
+=== Version filtering logic
+
+The workflow uses AWK to filter tags based on semantic versioning.
+
+* Old versions (3.x, 4.x) are excluded from processing
+* New major versions (5.x, 6.x, 7.x, etc.) are automatically included
+* The filtering is future-proof and requires no maintenance
+
+=== Manual triggering
+
+The workflow can also be triggered manually using the workflow dispatch event:
+
+. Navigate to
+  https://github.com/expresslang/eengine-releases/actions/workflows/check-tags.yml[Actions > Check for New Tags]
+. Click "Run workflow"
+. Select the branch (typically `main`)
+. Click "Run workflow"
+
+This is useful for:
+
+* Testing the workflow after modifications
+* Processing tags immediately without waiting for the daily cron
+* Debugging tag detection issues
+
+
+[[multi-platform-builds]]
+== Multi-platform builds
+
+=== General
+
+The `build-release.yml` workflow builds eengine binaries for three platforms:
+
+* Linux x86-64 (ubuntu-latest)
+* Windows x86-64 (windows-latest)
+* macOS ARM64 (macos-14)
+
+Each platform build runs in parallel as a separate job, then all artifacts are
+collected and uploaded to a single GitHub release.
+
+=== Build process
+
+The build process for each platform follows these steps:
+
+. Install Steel Bank Common Lisp (SBCL) using the platform's package manager
+. Verify SBCL installation
+. Checkout the eengine repository at the specified tag
+. Compile the source code using `sbcl --load sbcl/compile.lisp`
+. Create the deliverable binary using `sbcl --load sbcl/deliver.lisp`
+. Locate the generated binary using pattern matching
+. Upload the binary as a workflow artifact
+
+.Platform-specific SBCL installation
+====
+Each platform uses its native package manager:
+
+[source,yaml]
+----
+# Linux
+sudo apt-get update
+sudo apt-get install -y sbcl
+
+# Windows
+choco install sbcl -y
+
+# macOS
+brew install sbcl
+----
+====
+
+=== Binary naming convention
+
+The eengine build system automatically names binaries according to the
+official executable pattern:
+
+`eengine-{version}-{platform}-{arch}-sbcl{.exe}`
+
+Where:
+
+`version`:: The semantic version from the tag (e.g., `5.2.7`)
+`platform`:: Operating system identifier (`lnx`, `win`, or `mac`)
+`arch`:: Architecture (`x86-64` for Linux/Windows, `arm64` for macOS)
+`sbcl`:: Indicates the Common Lisp implementation used
+`.exe`:: Extension added only for Windows binaries
+
+.Example binary names
+====
+[source]
+----
+eengine-5.2.7-lnx-x86-64-sbcl      # Linux
+eengine-5.2.7-win-x86-64-sbcl.exe  # Windows
+eengine-5.2.7-mac-arm64-sbcl       # macOS
+----
+====
+
+[[automated-github-releases]]
+== Automated GitHub releases
+
+=== General
+
+Once all platform builds complete successfully, the workflow creates a GitHub
+release using the https://github.com/softprops/action-gh-release[softprops/action-gh-release]
+action.
+
+The release process:
+
+. Downloads all platform-specific artifacts
+. Prepares a release directory with all binaries
+. Creates a GitHub release with the tag name
+. Uploads all three platform binaries to the release
+. Generates release notes automatically from git commits
+
+=== Release configuration
+
+[source,yaml]
+----
+- name: Create Release
+  uses: softprops/action-gh-release@v2
+  with:
+    tag_name: ${{ inputs.tag_name }}
+    name: eengine ${{ steps.prepare.outputs.version }}
+    draft: false
+    prerelease: false
+    generate_release_notes: true
+    files: |
+      release-files/*
+    fail_on_unmatched_files: true
+----
+
+The workflow is configured to:
+
+* Use the eengine tag name (e.g., `eeng-5.2.7`) as the release tag
+* Generate a human-readable release title (e.g., `eengine 5.2.7`)
+* Publish releases immediately (not as drafts)
+* Mark stable versions as non-prerelease
+* Auto-generate release notes from the eengine repository commits
+* Fail if any expected binary is missing
+
+=== Manual triggering
+
+The build-release workflow can be triggered manually:
+
+. Navigate to
+  https://github.com/expresslang/eengine-releases/actions/workflows/build-release.yml[Actions > Build and Release]
+. Click "Run workflow"
+. Enter the tag name (e.g., `eeng-5.2.7`)
+. Click "Run workflow"
+
+This is useful for:
+
+* Rebuilding a release if the initial build failed
+* Testing the build process for a specific tag
+* Creating releases for tags that were missed by the automatic checker
+
+
+[[version-filtering]]
+== Version filtering
+
+=== General
+
+The tag checking workflow implements version filtering to process only
+relevant eengine releases.
+
+Current filtering criteria:
+
+* Include: All tags with major version ≥ 5 (5.x, 6.x, 7.x, etc.)
+* Exclude: Legacy versions (3.x, 4.x)
+
+This filtering ensures that:
+
+* Old releases are not processed unnecessarily
+* The repository remains focused on current and future versions
+* No manual intervention is needed when new major versions are released
+
+=== Filtering implementation
+
+The version filtering uses AWK to parse semantic version numbers from tag
+names:
+
+[source,bash]
+----
+# Get all tags matching eeng-* pattern
+ALL_TAGS=$(git tag -l 'eeng-*' | sort -V)
+
+# Filter for versions >= 5.0.0
+FILTERED_TAGS=$(echo "$ALL_TAGS" | awk -F'-' '{
+  split($2, ver, ".");
+  major = ver[1];
+  if (major >= 5) print $0;
+}')
+----
+
+The AWK script:
+
+. Splits each tag on the `-` character
+. Extracts the version portion (second field)
+. Splits the version on `.` to get major, minor, patch
+. Checks if the major version is 5 or greater
+. Prints matching tags
+
+This approach is robust and handles version numbers with varying formats
+(e.g., `5.2.7`, `5.10.0.1`, `6.0.0`).
+
+=== Modifying version criteria
+
+.Changing the minimum version
+====
+To change which versions are processed, modify the comparison in the AWK
+script:
+
+[source,bash]
+----
+# Process versions >= 6.0.0
+if (major >= 6) print $0;
+
+# Process only version 5.x
+if (major == 5) print $0;
+
+# Process versions >= 5.2.0
+if (major > 5 || (major == 5 && minor >= 2)) print $0;
+----
+====
+
+== Troubleshooting
+
+=== Build failures
+
+If a platform build fails:
+
+. Check the
+  https://github.com/expresslang/eengine-releases/actions[Actions tab] for
+  error details
+. Verify that SBCL installed correctly on the platform
+. Ensure the eengine tag exists in the SourceForge repository
+. Check that the build scripts (`sbcl/compile.lisp` and `sbcl/deliver.lisp`)
+  are present in the tag
+
+=== Missing releases
+
+If expected releases are not created:
+
+. Verify the tag name matches the pattern `eeng-*`
+. Check that the tag's major version is 5 or greater
+. Ensure the tag doesn't already have a corresponding GitHub release
+. Review the check-tags workflow logs for filtering details
+
+=== Binary naming issues
+
+If binaries are not found during the release process:
+
+. Check the build job logs to see what binary name was generated
+. Verify the artifact pattern matches the actual binary name
+. Ensure the eengine build system is generating binaries with the expected
+  naming convention
+
+== Source Repository
+
+The eengine source code is maintained at:
+
+https://sourceforge.net/projects/exp-engine/
+
+To clone the eengine repository:
+
+[source,bash]
+----
+git clone git://git.code.sf.net/p/exp-engine/engine exp-engine
+----
+
+== License
+
+The workflows in this repository are provided as-is for automating eengine
+releases. Refer to the eengine project for its license terms.
