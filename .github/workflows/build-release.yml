@@ -19,29 +19,38 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            platform: linux
-            artifact_pattern: 'eengine-*-lnx-*-sbcl'
+            platform: linux-x64
+            artifact_pattern: 'eengine-*-lnx-x86-64-sbcl'
+          - os: ubuntu-22.04-arm
+            platform: linux-arm64
+            artifact_pattern: 'eengine-*-lnx-arm64-sbcl'
           - os: windows-latest
-            platform: windows
-            artifact_pattern: 'eengine-*-win-*-sbcl.exe'
+            platform: windows-x64
+            artifact_pattern: 'eengine-*-win-x86-64-sbcl.exe'
+          - os: windows-11-arm
+            platform: windows-arm64
+            artifact_pattern: 'eengine-*-win-arm64-sbcl.exe'
+          - os: macos-13
+            platform: macos-intel
+            artifact_pattern: 'eengine-*-mac-x86-64-sbcl'
           - os: macos-14
-            platform: macos
-            artifact_pattern: 'eengine-*-mac-*-sbcl'
+            platform: macos-arm64
+            artifact_pattern: 'eengine-*-mac-arm64-sbcl'
 
     steps:
       - name: Install SBCL (Linux)
-        if: matrix.platform == 'linux'
+        if: startsWith(matrix.platform, 'linux-')
         run: |
           sudo apt-get update
           sudo apt-get install -y sbcl
 
       - name: Install SBCL (Windows)
-        if: matrix.platform == 'windows'
+        if: startsWith(matrix.platform, 'windows-')
         run: |
           choco install sbcl -y
 
       - name: Install SBCL (macOS)
-        if: matrix.platform == 'macos'
+        if: startsWith(matrix.platform, 'macos-')
         run: |
           brew install sbcl
 
@@ -54,7 +63,7 @@ jobs:
           git clone --depth 1 --branch ${{ inputs.tag_name }} git://git.code.sf.net/p/exp-engine/engine eengine
 
       - name: Build eengine (Unix)
-        if: matrix.platform != 'windows'
+        if: ${{ !startsWith(matrix.platform, 'windows-') }}
         working-directory: eengine
         run: |
           echo "Building eengine for ${{ matrix.platform }}..."
@@ -62,7 +71,7 @@ jobs:
           sbcl --load sbcl/deliver.lisp
 
       - name: Build eengine (Windows)
-        if: matrix.platform == 'windows'
+        if: startsWith(matrix.platform, 'windows-')
         working-directory: eengine
         shell: cmd
         run: |
@@ -104,7 +113,7 @@ jobs:
           echo "binary_name=$BINARY" >> $GITHUB_OUTPUT
 
           # Make executable on Unix platforms
-          if [ "${{ matrix.platform }}" != "windows" ]; then
+          if [[ ! "${{ matrix.platform }}" =~ ^windows- ]]; then
             chmod +x "$BINARY"
           fi
 
@@ -174,3 +183,29 @@ jobs:
           ls -1 release-files/ | while read file; do
             echo "- \`$file\`" >> $GITHUB_STEP_SUMMARY
           done
+
+  trigger-homebrew-update:
+    name: Trigger Homebrew Formula Update
+    needs: release
+    runs-on: ubuntu-latest
+    # Only trigger for macOS and Linux builds (skip Windows-only releases)
+    if: success()
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${{ inputs.tag_name }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Trigger homebrew-eengine workflow
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: expresslang/homebrew-eengine
+          event-type: update-formula
+          client-payload: |
+            {
+              "version": "${{ steps.version.outputs.version }}",
+              "release_url": "https://github.com/expresslang/eengine-releases/releases/tag/${{ inputs.tag_name }}"
+            }

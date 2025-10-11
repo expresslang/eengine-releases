@@ -1,4 +1,4 @@
-= eengine Release Automation
+= ELF-managed Express Engine (eengine) releases
 :toc:
 :toclevels: 3
 
@@ -57,62 +57,175 @@ providing easy access to pre-built cross-platform eengine binaries.
                          │
                          │ Workflow dispatch
                          ▼
-┌────────────────────────────────────────────────────────────────┐
-│        GitHub Actions Workflow: build-release.yml              │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │ Linux Build  │  │Windows Build │  │ macOS Build  │          │
-│  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
-│  │ ubuntu-latest│  │windows-latest│  │  macos-14    │          │
-│  │              │  │              │  │              │          │
-│  │ 1. Install   │  │ 1. Install   │  │ 1. Install   │          │
-│  │    SBCL      │  │    SBCL      │  │    SBCL      │          │
-│  │ 2. Checkout  │  │ 2. Checkout  │  │ 2. Checkout  │          │
-│  │    source    │  │    source    │  │    source    │          │
-│  │ 3. Compile   │  │ 3. Compile   │  │ 3. Compile   │          │
-│  │ 4. Deliver   │  │ 4. Deliver   │  │ 4. Deliver   │          │
-│  │ 5. Upload    │  │ 5. Upload    │  │ 5. Upload    │          │
-│  │    artifact  │  │    artifact  │  │    artifact  │          │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
-│         │                 │                 │                  │
-│         └─────────────────┴─────────────────┘                  │
-│                           │                                    │
-│                           ▼                                    │
-│                  ┌────────────────┐                            │
-│                  │ Release Job    │                            │
-│                  ├────────────────┤                            │
-│                  │ 1. Download    │                            │
-│                  │    all         │                            │
-│                  │    artifacts   │                            │
-│                  │ 2. Create      │                            │
-│                  │    GitHub      │                            │
-│                  │    Release     │                            │
-│                  │ 3. Upload      │                            │
-│                  │    binaries    │                            │
-│                  └────────────────┘                            │
-│                                                                │
-└────────────────────────┬───────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│          GitHub Actions Workflow: build-release.yml             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                   Platform Build Jobs                     │  │
+│  ├─────────────────────┬─────────────────────────────────────┤  │
+│  │  (platform)         │  (GitHub runner)                    │  │
+│  ├─────────────────────┼─────────────────────────────────────┤  │
+│  │  Linux x64          │  ubuntu-latest                      │  │
+│  │  Linux ARM64        │  ubuntu-22.04-arm                   │  │
+│  │  Windows x64        │  windows-latest                     │  │
+│  │  Windows ARM64      │  windows-11-arm                     │  │
+│  │  macOS Intel        │  macos-13                           │  │
+│  │  macOS ARM64        │  macos-14                           │  │
+│  └─────────────────────┴─────────────────────────────────────┘  │
+│                        │                                        │
+│                        ▼                                        │
+│              ┌──────────────────────────────────┐               │
+│              │        Release Job               │               │
+│              ├──────────────────────────────────┤               │
+│              │  1. Download all artifacts       │               │
+│              │  2. Create GitHub Release        │               │
+│              │  3. Upload binaries              │               │
+│              └──────────────────────────────────┘               │
+│                                                                 │
+└────────────────────────┬────────────────────────────────────────┘
                          │
                          ▼
-┌────────────────────────────────────────────────────────────────┐
-│                     GitHub Release                             │
-│                                                                │
-│  Tag: eeng-5.2.7                                               │
-│  Artifacts:                                                    │
-│    - eengine-5.2.7-lnx-x86-64-sbcl                             │
-│    - eengine-5.2.7-win-x86-64-sbcl.exe                         │
-│    - eengine-5.2.7-mac-arm64-sbcl                              │
-└────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                           GitHub Release                        │
+│                                                                 │
+│  Tag: eeng-5.2.7                                                │
+│  Artifacts:                                                     │
+│    - eengine-5.2.7-lnx-x86-64-sbcl    (Linux x86-64)            │
+│    - eengine-5.2.7-lnx-arm64-sbcl     (Linux ARM64)             │
+│    - eengine-5.2.7-win-x86-64-sbcl.exe (Windows x86-64)         │
+│    - eengine-5.2.7-win-arm64-sbcl.exe  (Windows ARM64)          │
+│    - eengine-5.2.7-mac-x86-64-sbcl    (macOS Intel)             │
+│    - eengine-5.2.7-mac-arm64-sbcl     (macOS Apple Silicon)     │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         │ On release published
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│       GitHub Actions Workflow: trigger-homebrew-update.yml      │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Extract version from release tag                            │
+│  2. Dispatch repository_dispatch event to homebrew-eengine      │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         │ repository_dispatch
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     homebrew-eengine Repository                 │
+│                  (expresslang/homebrew-eengine)                 │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Receive repository_dispatch event                           │
+│  2. Run generate-formula.rb script                              │
+│  3. Download release binaries and calculate SHA256              │
+│  4. Update formula-metadata.json                                │
+│  5. Generate Formula/eengine.rb from template                   │
+│  6. Create pull request with updated formula                    │
+└─────────────────────────────────────────────────────────────────┘
 ----
 
 == Installation
 
+=== Homebrew (recommended for macOS and Linux)
+
+The recommended way to install eengine on macOS and Linux is via Homebrew:
+
+[source,bash]
+----
+# Add the eengine tap
+brew tap expresslang/eengine
+
+# Install eengine
+brew install eengine
+
+# Verify installation
+eengine --version
+
+# Update to latest version
+brew upgrade eengine
+----
+
+=== Direct download
+
+Download the appropriate binary for your platform from the
+https://github.com/expresslang/eengine-releases/releases[Releases page].
+
+==== Linux (x86-64)
+
+[source,bash]
+----
+# Download latest release (replace version number as needed)
+wget https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-lnx-x86-64-sbcl
+
+# Make executable and install
+chmod +x eengine-5.2.7-lnx-x86-64-sbcl
+sudo mv eengine-5.2.7-lnx-x86-64-sbcl /usr/local/bin/eengine
+
+# Verify installation
+eengine --version
+----
+
+==== Linux (ARM64)
+
+[source,bash]
+----
+# Download latest release (replace version number as needed)
+wget https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-lnx-arm64-sbcl
+
+# Make executable and install
+chmod +x eengine-5.2.7-lnx-arm64-sbcl
+sudo mv eengine-5.2.7-lnx-arm64-sbcl /usr/local/bin/eengine
+
+# Verify installation
+eengine --version
+----
+
+==== macOS (Apple Silicon)
+
+[source,bash]
+----
+# Download latest release (replace version number as needed)
+curl -L -o eengine https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-mac-arm64-sbcl
+
+# Make executable and install
+chmod +x eengine
+sudo mv eengine /usr/local/bin/
+
+# Verify installation
+eengine --version
+----
+
+==== macOS (Intel)
+
+[source,bash]
+----
+# Download latest release (replace version number as needed)
+curl -L -o eengine https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-mac-x86-64-sbcl
+
+# Make executable and install
+chmod +x eengine
+sudo mv eengine /usr/local/bin/
+
+# Verify installation
+eengine --version
+----
+
+==== Windows (x86-64)
+
+Download the `.exe` file from the
+https://github.com/expresslang/eengine-releases/releases[Releases page] and
+add it to your system PATH manually.
+
+==== Windows (ARM64)
+
+Download the ARM64 `.exe` file from the
+https://github.com/expresslang/eengine-releases/releases[Releases page] for
+Windows ARM devices (Surface Pro X, Copilot+ PCs) and add it to your system
+PATH manually.
+
+=== For repository maintainers
+
 No installation is required for this repository. The workflows run
 automatically on GitHub Actions.
-
-To use the pre-built binaries, download them from the
-https://github.com/expresslang/eengine-releases/releases[Releases page].
 
 [[daily-tag-checking]]
 == Daily tag checking
@@ -165,10 +278,13 @@ This is useful for:
 
 === General
 
-The `build-release.yml` workflow builds eengine binaries for three platforms:
+The `build-release.yml` workflow builds eengine binaries for six platforms:
 
 * Linux x86-64 (ubuntu-latest)
+* Linux ARM64 (ubuntu-22.04-arm)
 * Windows x86-64 (windows-latest)
+* Windows ARM64 (windows-11-arm)
+* macOS Intel (macos-13)
 * macOS ARM64 (macos-14)
 
 Each platform build runs in parallel as a separate job, then all artifacts are
@@ -223,9 +339,12 @@ Where:
 ====
 [source]
 ----
-eengine-5.2.7-lnx-x86-64-sbcl      # Linux
-eengine-5.2.7-win-x86-64-sbcl.exe  # Windows
-eengine-5.2.7-mac-arm64-sbcl       # macOS
+eengine-5.2.7-lnx-x86-64-sbcl       # Linux x86-64
+eengine-5.2.7-lnx-arm64-sbcl        # Linux ARM64
+eengine-5.2.7-win-x86-64-sbcl.exe   # Windows x86-64
+eengine-5.2.7-win-arm64-sbcl.exe    # Windows ARM64
+eengine-5.2.7-mac-x86-64-sbcl       # macOS Intel
+eengine-5.2.7-mac-arm64-sbcl        # macOS Apple Silicon
 ----
 ====
 
