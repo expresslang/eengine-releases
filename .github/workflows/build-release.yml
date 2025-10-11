@@ -201,7 +201,7 @@ jobs:
       - name: Trigger homebrew-eengine workflow
         uses: peter-evans/repository-dispatch@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.EXPRESSLANG_CI_PAT_TOKEN }}
           repository: expresslang/homebrew-eengine
           event-type: update-formula
           client-payload: |
