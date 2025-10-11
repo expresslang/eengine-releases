@@ -110,6 +110,38 @@ jobs:
 
           echo ""
           echo "Using binary: $BINARY"
+
+          # Rename to standardized pattern based on platform
+          VERSION="${{ inputs.tag_name }}"
+          VERSION="${VERSION#eeng-}"
+
+          case "${{ matrix.platform }}" in
+            linux-x64)
+              NEW_NAME="eengine-${VERSION}-lnx-x86-64-sbcl"
+              ;;
+            linux-arm64)
+              NEW_NAME="eengine-${VERSION}-lnx-arm64-sbcl"
+              ;;
+            windows-x64)
+              NEW_NAME="eengine-${VERSION}-win-x86-64-sbcl.exe"
+              ;;
+            windows-arm64)
+              NEW_NAME="eengine-${VERSION}-win-arm64-sbcl.exe"
+              ;;
+            macos-intel)
+              NEW_NAME="eengine-${VERSION}-mac-x86-64-sbcl"
+              ;;
+            macos-arm64)
+              NEW_NAME="eengine-${VERSION}-mac-arm64-sbcl"
+              ;;
+          esac
+
+          if [ "$BINARY" != "$NEW_NAME" ]; then
+            echo "Renaming: $BINARY → $NEW_NAME"
+            mv "$BINARY" "$NEW_NAME"
+            BINARY="$NEW_NAME"
+          fi
+
           echo "binary_name=$BINARY" >> $GITHUB_OUTPUT
 
           # Make executable on Unix platforms
