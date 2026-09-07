@@ -6,6 +6,17 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
     # Allow manual triggering for testing
+    inputs:
+      dry_run:
+        description: 'List new tags without dispatching builds'
+        required: false
+        default: false
+        type: boolean
+      max_new_tags:
+        description: 'Refuse to dispatch more than this many builds in one run'
+        required: false
+        default: '3'
+        type: string
 
 jobs:
   check-tags:
@@ -48,12 +59,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Get list of existing release tags
-          gh release list --repo ${{ github.repository }} --limit 1000 | \
-            awk '{print $3}' > existing-releases.txt
+          # Tag names straight from the API. The former `gh release list |
+          # awk '{print $3}'` read the date column for every release except
+          # the one marked Latest (its TYPE column is blank), so on 2026-09-07
+          # it saw one release, called the other 41 tags new, and dispatched
+          # 41 builds that replaced the assets of 12 existing releases.
+          gh api --paginate "repos/${{ github.repository }}/releases?per_page=100" \
+            --jq '.[].tag_name' > existing-releases.txt
 
           echo "Existing releases:"
           cat existing-releases.txt
+
+          # An empty list is a failure of this step, never "everything is new".
+          if [ ! -s existing-releases.txt ]; then
+            echo "::error::No existing releases could be listed; refusing to continue"
+            exit 1
+          fi
 
       - name: Find new tags
         id: new-tags
@@ -78,11 +99,20 @@ jobs:
           fi
 
       - name: Trigger build workflow for new tags
-        if: steps.new-tags.outputs.has_new_tags == 'true'
+        if: steps.new-tags.outputs.has_new_tags == 'true' && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ github.token }}
+          MAX_NEW_TAGS: ${{ inputs.max_new_tags || '3' }}
         run: |
           TAGS='${{ steps.new-tags.outputs.tags }}'
+
+          # Upstream releases one tag at a time; a long list means the
+          # comparison above went wrong, not that many releases are due.
+          COUNT=$(echo "$TAGS" | jq 'length')
+          if [ "$COUNT" -gt "$MAX_NEW_TAGS" ]; then
+            echo "::error::$COUNT new tags exceed the limit of $MAX_NEW_TAGS; refusing to dispatch"
+            exit 1
+          fi
 
           echo "$TAGS" | jq -r '.[]' | while read -r tag; do
             echo "Triggering build for tag: $tag"

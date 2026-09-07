@@ -248,6 +248,24 @@ This workflow implements the following logic:
 NOTE: We use `git clone` directly instead of `actions/checkout` due to
 https://github.com/actions/checkout/issues/447[limitations with non-GitHub repositories].
 
+=== Guards
+
+The comparison of tags with releases reads tag names from the REST API. An
+earlier version parsed `gh release list` with `awk '{print $3}'`, which
+returns the date column for every release except the one marked Latest, so
+on 2026-09-07 it counted 41 released tags as new, dispatched 41 builds and
+replaced the binaries of twelve existing releases before it was stopped.
+Three guards now apply:
+
+* an empty list of existing releases fails the run instead of meaning
+  "everything is new";
+* more new tags than `max_new_tags` (default 3) fail the run, since
+  upstream releases one tag at a time;
+* `build-release.yml` refuses a tag that already has a release unless its
+  `overwrite` input is set, so published binaries keep their checksums.
+
+A manual run with `dry_run` set lists the new tags without dispatching.
+
 === Keeping the schedule alive
 
 GitHub disables a scheduled workflow after 60 days without repository

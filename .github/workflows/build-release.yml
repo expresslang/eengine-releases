@@ -7,13 +7,43 @@ on:
         description: 'Tag name to build and release (e.g., eeng-5.2.7)'
         required: true
         type: string
+      overwrite:
+        description: 'Replace the assets of a release that already exists (default: refuse)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 jobs:
+  # softprops/action-gh-release updates an existing release and overwrites
+  # same-named assets. On 2026-09-07 a faulty tag comparison dispatched
+  # builds for every released tag and replaced the binaries of twelve
+  # releases before it was stopped. Published assets stay as published
+  # unless overwrite is requested explicitly.
+  guard:
+    name: Refuse to rebuild an existing release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ inputs.tag_name }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            if [ "${{ inputs.overwrite }}" = "true" ]; then
+              echo "Release ${{ inputs.tag_name }} exists; overwrite requested, continuing"
+            else
+              echo "::error::Release ${{ inputs.tag_name }} already exists; re-run with overwrite=true to replace its assets"
+              exit 1
+            fi
+          else
+            echo "No release for ${{ inputs.tag_name }} yet; building"
+          fi
+
   build:
     name: Build ${{ matrix.platform }}
+    needs: guard
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
