@@ -30,7 +30,7 @@ jobs:
           - os: windows-11-arm
             platform: windows-arm64
             artifact_pattern: 'eengine-*-win-arm64-sbcl.exe'
-          - os: macos-13
+          - os: macos-15-intel
             platform: macos-intel
             artifact_pattern: 'eengine-*-mac-x86-64-sbcl'
           - os: macos-14

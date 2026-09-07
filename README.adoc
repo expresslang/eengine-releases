@@ -70,7 +70,7 @@ providing easy access to pre-built cross-platform eengine binaries.
 │  │  Linux ARM64        │  ubuntu-22.04-arm                   │  │
 │  │  Windows x64        │  windows-latest                     │  │
 │  │  Windows ARM64      │  windows-11-arm                     │  │
-│  │  macOS Intel        │  macos-13                           │  │
+│  │  macOS Intel        │  macos-15-intel                     │  │
 │  │  macOS ARM64        │  macos-14                           │  │
 │  └─────────────────────┴─────────────────────────────────────┘  │
 │                        │                                        │
@@ -284,7 +284,7 @@ The `build-release.yml` workflow builds eengine binaries for six platforms:
 * Linux ARM64 (ubuntu-22.04-arm)
 * Windows x86-64 (windows-latest)
 * Windows ARM64 (windows-11-arm)
-* macOS Intel (macos-13)
+* macOS Intel (macos-15-intel)
 * macOS ARM64 (macos-14)
 
 Each platform build runs in parallel as a separate job, then all artifacts are
