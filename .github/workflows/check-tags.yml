@@ -95,6 +95,17 @@ jobs:
             sleep 2
           done
 
+      # GitHub disables a scheduled workflow after 60 days without repository
+      # activity, and releases are rare (this check was found disabled on
+      # 2026-09-07 with eeng-5.2.8 waiting). Re-enabling it on every run
+      # resets that clock.
+      - name: Keep the schedule alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method PUT \
+            repos/${{ github.repository }}/actions/workflows/check-tags.yml/enable
+
       - name: Summary
         run: |
           if [ "${{ steps.new-tags.outputs.has_new_tags }}" == "true" ]; then

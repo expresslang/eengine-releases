@@ -248,6 +248,17 @@ This workflow implements the following logic:
 NOTE: We use `git clone` directly instead of `actions/checkout` due to
 https://github.com/actions/checkout/issues/447[limitations with non-GitHub repositories].
 
+=== Keeping the schedule alive
+
+GitHub disables a scheduled workflow after 60 days without repository
+activity, and automated releases do not count as activity. This check was
+found disabled on 2026-09-07 with eeng-5.2.8 waiting on SourceForge. The
+workflow therefore ends every run by re-enabling itself through the REST
+API (`PUT /repos/{owner}/{repo}/actions/workflows/check-tags.yml/enable`),
+which resets the inactivity clock. If the workflow is ever found disabled
+again, run `gh workflow enable check-tags.yml --repo expresslang/eengine-releases`
+once; from then on it keeps itself enabled.
+
 === Version filtering logic
 
 The workflow uses AWK to filter tags based on semantic versioning.
