@@ -89,14 +89,14 @@ providing easy access to pre-built cross-platform eengine binaries.
 ┌─────────────────────────────────────────────────────────────────┐
 │                           GitHub Release                        │
 │                                                                 │
-│  Tag: eeng-5.2.7                                                │
+│  Tag: eeng-5.2.8                                                │
 │  Artifacts:                                                     │
-│    - eengine-5.2.7-lnx-x86-64-sbcl    (Linux x86-64)            │
-│    - eengine-5.2.7-lnx-arm64-sbcl     (Linux ARM64)             │
-│    - eengine-5.2.7-win-x86-64-sbcl.exe (Windows x86-64)         │
-│    - eengine-5.2.7-win-arm64-sbcl.exe  (Windows ARM64)          │
-│    - eengine-5.2.7-mac-x86-64-sbcl    (macOS Intel)             │
-│    - eengine-5.2.7-mac-arm64-sbcl     (macOS Apple Silicon)     │
+│    - eengine-5.2.8-lnx-x86-64-sbcl    (Linux x86-64)            │
+│    - eengine-5.2.8-lnx-arm64-sbcl     (Linux ARM64)             │
+│    - eengine-5.2.8-win-x86-64-sbcl.exe (Windows x86-64)         │
+│    - eengine-5.2.8-win-arm64-sbcl.exe  (Windows ARM64)          │
+│    - eengine-5.2.8-mac-x86-64-sbcl    (macOS Intel)             │
+│    - eengine-5.2.8-mac-arm64-sbcl     (macOS Apple Silicon)     │
 └────────────────────────┬────────────────────────────────────────┘
                          │
                          │ On release published
@@ -154,11 +154,11 @@ https://github.com/expresslang/eengine-releases/releases[Releases page].
 [source,bash]
 ----
 # Download latest release (replace version number as needed)
-wget https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-lnx-x86-64-sbcl
+wget https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.8/eengine-5.2.8-lnx-x86-64-sbcl
 
 # Make executable and install
-chmod +x eengine-5.2.7-lnx-x86-64-sbcl
-sudo mv eengine-5.2.7-lnx-x86-64-sbcl /usr/local/bin/eengine
+chmod +x eengine-5.2.8-lnx-x86-64-sbcl
+sudo mv eengine-5.2.8-lnx-x86-64-sbcl /usr/local/bin/eengine
 
 # Verify installation
 eengine --version
@@ -169,11 +169,11 @@ eengine --version
 [source,bash]
 ----
 # Download latest release (replace version number as needed)
-wget https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-lnx-arm64-sbcl
+wget https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.8/eengine-5.2.8-lnx-arm64-sbcl
 
 # Make executable and install
-chmod +x eengine-5.2.7-lnx-arm64-sbcl
-sudo mv eengine-5.2.7-lnx-arm64-sbcl /usr/local/bin/eengine
+chmod +x eengine-5.2.8-lnx-arm64-sbcl
+sudo mv eengine-5.2.8-lnx-arm64-sbcl /usr/local/bin/eengine
 
 # Verify installation
 eengine --version
@@ -184,7 +184,7 @@ eengine --version
 [source,bash]
 ----
 # Download latest release (replace version number as needed)
-curl -L -o eengine https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-mac-arm64-sbcl
+curl -L -o eengine https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.8/eengine-5.2.8-mac-arm64-sbcl
 
 # Make executable and install
 chmod +x eengine
@@ -199,7 +199,7 @@ eengine --version
 [source,bash]
 ----
 # Download latest release (replace version number as needed)
-curl -L -o eengine https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.7/eengine-5.2.7-mac-x86-64-sbcl
+curl -L -o eengine https://github.com/expresslang/eengine-releases/releases/download/eeng-5.2.8/eengine-5.2.8-mac-x86-64-sbcl
 
 # Make executable and install
 chmod +x eengine
@@ -329,7 +329,7 @@ official executable pattern:
 
 Where:
 
-`version`:: The semantic version from the tag (e.g., `5.2.7`)
+`version`:: The semantic version from the tag (e.g., `5.2.8`)
 `platform`:: Operating system identifier (`lnx`, `win`, or `mac`)
 `arch`:: Architecture (`x86-64` for Linux/Windows, `arm64` for macOS)
 `sbcl`:: Indicates the Common Lisp implementation used
@@ -339,12 +339,12 @@ Where:
 ====
 [source]
 ----
-eengine-5.2.7-lnx-x86-64-sbcl       # Linux x86-64
-eengine-5.2.7-lnx-arm64-sbcl        # Linux ARM64
-eengine-5.2.7-win-x86-64-sbcl.exe   # Windows x86-64
-eengine-5.2.7-win-arm64-sbcl.exe    # Windows ARM64
-eengine-5.2.7-mac-x86-64-sbcl       # macOS Intel
-eengine-5.2.7-mac-arm64-sbcl        # macOS Apple Silicon
+eengine-5.2.8-lnx-x86-64-sbcl       # Linux x86-64
+eengine-5.2.8-lnx-arm64-sbcl        # Linux ARM64
+eengine-5.2.8-win-x86-64-sbcl.exe   # Windows x86-64
+eengine-5.2.8-win-arm64-sbcl.exe    # Windows ARM64
+eengine-5.2.8-mac-x86-64-sbcl       # macOS Intel
+eengine-5.2.8-mac-arm64-sbcl        # macOS Apple Silicon
 ----
 ====
 
@@ -384,8 +384,8 @@ The release process:
 
 The workflow is configured to:
 
-* Use the eengine tag name (e.g., `eeng-5.2.7`) as the release tag
-* Generate a human-readable release title (e.g., `eengine 5.2.7`)
+* Use the eengine tag name (e.g., `eeng-5.2.8`) as the release tag
+* Generate a human-readable release title (e.g., `eengine 5.2.8`)
 * Publish releases immediately (not as drafts)
 * Mark stable versions as non-prerelease
 * Auto-generate release notes from the eengine repository commits
@@ -398,7 +398,7 @@ The build-release workflow can be triggered manually:
 . Navigate to
   https://github.com/expresslang/eengine-releases/actions/workflows/build-release.yml[Actions > Build and Release]
 . Click "Run workflow"
-. Enter the tag name (e.g., `eeng-5.2.7`)
+. Enter the tag name (e.g., `eeng-5.2.8`)
 . Click "Run workflow"
 
 This is useful for:
@@ -454,7 +454,7 @@ The AWK script:
 . Prints matching tags
 
 This approach is robust and handles version numbers with varying formats
-(e.g., `5.2.7`, `5.10.0.1`, `6.0.0`).
+(e.g., `5.2.8`, `5.10.0.1`, `6.0.0`).
 
 === Modifying version criteria
 
