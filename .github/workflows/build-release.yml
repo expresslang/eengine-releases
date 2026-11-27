@@ -63,7 +63,7 @@ jobs:
           - os: macos-15-intel
             platform: macos-intel
             artifact_pattern: 'eengine-*-mac-x86-64-sbcl'
-          - os: macos-14
+          - os: macos-15
             platform: macos-arm64
             artifact_pattern: 'eengine-*-mac-arm64-sbcl'
 
